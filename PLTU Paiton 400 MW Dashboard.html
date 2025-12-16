@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLTU Paiton 400 MW - Advanced Dashboard with n8n Integration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e40af;
+            --secondary: #0ea5e9;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f1419;
+            --surface: #1a202c;
+            --border: #2d3748;
+            --text: #e2e8f0;
+            --text-secondary: #a0aec0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            padding: 20px;
+            border-bottom: 3px solid var(--accent);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 10px 15px;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.online {
+            background-color: var(--success);
+            color: white;
+        }
+
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== NAVIGATION TABS ===== */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: var(--text);
+            background: rgba(14, 165, 233, 0.1);
+        }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ===== SECTIONS ===== */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== UNIT SELECTOR ===== */
+        .unit-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .unit-btn {
+            padding: 10px 15px;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .unit-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* ===== KPI GRID ===== */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(14, 165, 233, 0.2);
+            border-color: var(--accent);
+        }
+
+        .kpi-card.normal {
+            border-left: 4px solid var(--success);
+        }
+
+        .kpi-card.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .kpi-card.critical {
+            border-left: 4px solid var(--danger);
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 6px;
+        }
+
+        .kpi-unit {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-status {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .kpi-status.good {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .kpi-status.warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        /* ===== CHARTS ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+
+        .sparkline {
+            height: 60px;
+            background: linear-gradient(to right, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.3));
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* ===== N8N INTEGRATION PANEL ===== */
+        .integration-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .workflow-card {
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workflow-info h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .workflow-info p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .workflow-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        /* ===== CHATBOT SECTION ===== */
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header h3 {
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .chatbot-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .message.bot .message-bubble {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--text);
+        }
+
+        .message.user .message-bubble {
+            background: var(--accent);
+            color: white;
+        }
+
+        .chatbot-input {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .chatbot-input input {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 12px;
+        }
+
+        .chatbot-input button {
+            padding: 8px 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .chatbot-input button:hover {
+            background: #0891b2;
+        }
+
+        /* ===== TICKETING SYSTEM ===== */
+        .ticket-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .ticket-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .create-ticket-btn {
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .create-ticket-btn:hover {
+            background: #0891b2;
+            transform: translateY(-2px);
+        }
+
+        .ticket-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .ticket-item {
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .ticket-id {
+            font-weight: 700;
+            color: var(--accent);
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .ticket-content {
+            flex: 1;
+        }
+
+        .ticket-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .ticket-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .ticket-priority {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .priority-high {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .priority-medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .priority-low {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        /* ===== MODAL ===== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(14, 165, 233, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0891b2;
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(45, 55, 72, 0.8);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chatbot-container {
+                width: 100%;
+                height: 60vh;
+                bottom: 0;
+                right: 0;
+                left: 0;
+                border-radius: 12px 12px 0 0;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        /* ===== INFO BOX ===== */
+        .info-box {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+
+        /* ===== BADGE ===== */
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .badge-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-content">
+            <h1>⚡ PLTU PAITON 400 MW - Advanced Control Center</h1>
+            <div class="header-status">
+                <span style="font-size: 12px; color: rgba(255,255,255,0.8);">System Status</span>
+                <span class="status-badge online">🟢 ONLINE</span>
+                <span style="font-size: 12px; color: rgba(255,255,255,0.8);" id="current-time">--:--:--</span>
+                <span style="font-size: 11px; color: rgba(255,255,255,0.7);">n8n: <span class="badge badge-success">Connected</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- INFO BOX -->
+        <div class="info-box">
+            ℹ️ PLTU Paiton 400 MW dengan integrasi n8n workflow automation, AI ChatBot support, dan Ticketing System. 
+            Semua data real-time dari SCADA dengan polling 5 detik dan prediksi menggunakan RSM-ANN-LightGBM ensemble model.
+        </div>
+
+        <!-- UNIT INFO -->
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0 0 5px 0; color: var(--accent); font-size: 16px;">⚡ Unit Tunggal PLTU Paiton</h3>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 12px;">Kapasitas Terpasang: 400 MW | Status: Operasional</p>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 28px; font-weight: 700; color: var(--accent);">400 MW</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Full Capacity Unit</div>
+            </div>
+        </div>
+
+        <!-- NAVIGATION TABS -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('boiler')">🔥 Boiler Firing</button>
+            <button class="nav-tab" onclick="switchTab('mlmodels')">🧠 ML Models</button>
+            <button class="nav-tab" onclick="switchTab('n8n')">🔄 n8n Workflows</button>
+            <button class="nav-tab" onclick="switchTab('optimization')">🎯 Optimization</button>
+            <button class="nav-tab" onclick="switchTab('tickets')">🎫 Ticketing System</button>
+            <button class="nav-tab" onclick="switchTab('analytics')">📈 Analytics</button>
+        </div>
+
+        <!-- TAB 1: DASHBOARD -->
+        <div id="dashboard" class="section active">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">📊 Real-time Operation Dashboard</h2>
+            
+            <div class="kpi-grid">
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Net Output</div>
+                    <div class="kpi-value">400.0</div>
+                    <div class="kpi-unit">MW</div>
+                    <span class="kpi-status good">✓ Normal</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Heat Rate</div>
+                    <div class="kpi-value">2350</div>
+                    <div class="kpi-unit">kcal/kWh</div>
+                    <span class="kpi-status good">✓ Optimal</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Efficiency</div>
+                    <div class="kpi-value">36.2</div>
+                    <div class="kpi-unit">%</div>
+                    <span class="kpi-status good">✓ Target</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Coal Flow</div>
+                    <div class="kpi-value">200.0</div>
+                    <div class="kpi-unit">ton/jam</div>
+                    <span class="kpi-status good">✓ Normal</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Sawdust %</div>
+                    <div class="kpi-value">10.0</div>
+                    <div class="kpi-unit">%</div>
+                    <span class="kpi-status good">✓ Optimal</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">CO₂ Equiv</div>
+                    <div class="kpi-value">470</div>
+                    <div class="kpi-unit">g/kWh</div>
+                    <span class="kpi-status good">✓ Compliance</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">O₂ Level</div>
+                    <div class="kpi-value">3.2</div>
+                    <div class="kpi-unit">%</div>
+                    <span class="kpi-status good">✓ Stable</span>
+                </div>
+
+                <div class="kpi-card normal">
+                    <div class="kpi-label">Boiler Temp</div>
+                    <div class="kpi-value">540</div>
+                    <div class="kpi-unit">°C</div>
+                    <span class="kpi-status good">✓ Normal</span>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">📈 Real-time Trends</h3>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Net MW Trend (60 min)</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Heat Rate Trend</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Temperature Profile</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Emission Level (NOx)</div>
+                    <div class="sparkline"></div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">⚙️ System Status</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <div class="integration-panel" style="padding: 15px;">
+                    <h4 style="color: var(--text); margin-bottom: 10px; font-size: 14px;">SCADA Connection</h4>
+                    <div style="font-size: 12px; line-height: 1.8;">
+                        <div>Status: <span class="badge badge-success">Connected</span></div>
+                        <div>Last Sync: <span style="color: var(--accent);">12:25:10 UTC</span></div>
+                        <div>Polling Rate: <span style="color: var(--accent);">5 seconds</span></div>
+                        <div>Latency: <span style="color: var(--accent);">45 ms</span></div>
+                    </div>
+                </div>
+
+                <div class="integration-panel" style="padding: 15px;">
+                    <h4 style="color: var(--text); margin-bottom: 10px; font-size: 14px;">n8n Workflow</h4>
+                    <div style="font-size: 12px; line-height: 1.8;">
+                        <div>Status: <span class="badge badge-success">Active</span></div>
+                        <div>Last Execution: <span style="color: var(--accent);">12:25:00 UTC</span></div>
+                        <div>Success Rate: <span style="color: var(--accent);">99.8%</span></div>
+                        <div>Uptime: <span style="color: var(--accent);">45 days</span></div>
+                    </div>
+                </div>
+
+                <div class="integration-panel" style="padding: 15px;">
+                    <h4 style="color: var(--text); margin-bottom: 10px; font-size: 14px;">ChatBot Service</h4>
+                    <div style="font-size: 12px; line-height: 1.8;">
+                        <div>Status: <span class="badge badge-success">Available</span></div>
+                        <div>Responses: <span style="color: var(--accent);">47 today</span></div>
+                        <div>Avg Response: <span style="color: var(--accent);">2.3 sec</span></div>
+                        <div>Satisfaction: <span style="color: var(--accent);">98%</span></div>
+                    </div>
+                </div>
+
+                <div class="integration-panel" style="padding: 15px;">
+                    <h4 style="color: var(--text); margin-bottom: 10px; font-size: 14px;">Optimization Engine</h4>
+                    <div style="font-size: 12px; line-height: 1.8;">
+                        <div>Model: <span style="color: var(--accent);">Ensemble Ready</span></div>
+                        <div>Last Update: <span style="color: var(--accent);">Today 06:00</span></div>
+                        <div>Accuracy: <span style="color: var(--accent);">R² = 0.89</span></div>
+                        <div>Status: <span class="badge badge-success">Operational</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: BOILER FIRING VISUALIZATION -->
+        <div id="boiler" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">🔥 Real-time Boiler Firing System</h2>
+            
+            <div class="info-box">
+                📡 Live monitoring dari 5 feeder system dengan Silo level, Temperature, Flow rate, dan Motor status
+            </div>
+
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 30px; overflow-x: auto;">
+                <svg viewBox="0 0 1400 600" style="width: 100%; height: auto; min-height: 500px;">
+                    <!-- FURNACE CENTER -->
+                    <defs>
+                        <linearGradient id="fireGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b00;stop-opacity:1" />
+                            <stop offset="50%" style="stop-color:#ff9500;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#ffcc00;stop-opacity:0.6" />
+                        </linearGradient>
+                        <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1e40af;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0.6" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- CENTER FURNACE -->
+                    <rect x="500" y="100" width="400" height="300" fill="url(#fireGradient)" stroke="#ef4444" stroke-width="3" rx="10"/>
+                    <text x="700" y="280" font-size="48" font-weight="bold" fill="white" text-anchor="middle" opacity="0.8">🔥</text>
+                    <text x="700" y="350" font-size="16" font-weight="600" fill="white" text-anchor="middle">FURNACE</text>
+                    <text x="700" y="370" font-size="12" fill="#e2e8f0" text-anchor="middle">Temp: 1200°C | Press: -21.1 mmWc</text>
+
+                    <!-- BOILER TUBES (Top) -->
+                    <rect x="450" y="30" width="500" height="50" fill="url(#waterGradient)" stroke="#0ea5e9" stroke-width="2" rx="5"/>
+                    <text x="700" y="62" font-size="14" font-weight="600" fill="white" text-anchor="middle">SUPERHEATER TUBES: 540°C | 323.3 MW</text>
+
+                    <!-- LEFT SIDE FEEDERS (A, B, C) -->
+                    <!-- FEEDER A -->
+                    <g>
+                        <rect x="50" y="80" width="80" height="100" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="5" opacity="0.9"/>
+                        <text x="90" y="115" font-size="24" font-weight="bold" fill="white" text-anchor="middle">A</text>
+                        <text x="90" y="145" font-size="11" fill="white" text-anchor="middle" font-weight="600">75%</text>
+                        <text x="90" y="160" font-size="10" fill="#e2e8f0" text-anchor="middle">46K kg/h</text>
+                        <text x="90" y="175" font-size="9" fill="#a0aec0" text-anchor="middle">854 RPM</text>
+                    </g>
+                    <!-- Connection A to Furnace -->
+                    <line x1="130" y1="130" x2="500" y2="180" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5,5"/>
+                    
+                    <!-- FEEDER B -->
+                    <g>
+                        <rect x="50" y="200" width="80" height="100" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="5" opacity="0.9"/>
+                        <text x="90" y="235" font-size="24" font-weight="bold" fill="white" text-anchor="middle">B</text>
+                        <text x="90" y="265" font-size="11" fill="white" text-anchor="middle" font-weight="600">79%</text>
+                        <text x="90" y="280" font-size="10" fill="#e2e8f0" text-anchor="middle">97K kg/h</text>
+                        <text x="90" y="295" font-size="9" fill="#a0aec0" text-anchor="middle">828 RPM</text>
+                    </g>
+                    <!-- Connection B to Furnace -->
+                    <line x1="130" y1="250" x2="500" y2="250" stroke="#f59e0b" stroke-width="3" stroke-dasharray="5,5"/>
+
+                    <!-- FEEDER C -->
+                    <g>
+                        <rect x="50" y="320" width="80" height="100" fill="#06b6d4" stroke="#0891b2" stroke-width="2" rx="5" opacity="0.9"/>
+                        <text x="90" y="355" font-size="24" font-weight="bold" fill="white" text-anchor="middle">C</text>
+                        <text x="90" y="385" font-size="11" fill="white" text-anchor="middle" font-weight="600">85%</text>
+                        <text x="90" y="400" font-size="10" fill="#e2e8f0" text-anchor="middle">47K kg/h</text>
+                        <text x="90" y="415" font-size="9" fill="#a0aec0" text-anchor="middle">738 RPM</text>
+                    </g>
+                    <!-- Connection C to Furnace -->
+                    <line x1="130" y1="370" x2="500" y2="320" stroke="#06b6d4" stroke-width="3" stroke-dasharray="5,5"/>
+
+                    <!-- RIGHT SIDE FEEDERS (D, E) -->
+                    <!-- FEEDER D -->
+                    <g>
+                        <rect x="1270" y="80" width="80" height="100" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="5" opacity="0.9"/>
+                        <text x="1310" y="115" font-size="24" font-weight="bold" fill="white" text-anchor="middle">D</text>
+                        <text x="1310" y="145" font-size="11" fill="white" text-anchor="middle" font-weight="600">91%</text>
+                        <text x="1310" y="160" font-size="10" fill="#e2e8f0" text-anchor="middle">95K kg/h</text>
+                        <text x="1310" y="175" font-size="9" fill="#a0aec0" text-anchor="middle">835 RPM</text>
+                    </g>
+                    <!-- Connection D to Furnace -->
+                    <line x1="1270" y1="130" x2="900" y2="180" stroke="#ef4444" stroke-width="3" stroke-dasharray="5,5"/>
+
+                    <!-- FEEDER E -->
+                    <g>
+                        <rect x="1270" y="200" width="80" height="100" fill="#10b981" stroke="#059669" stroke-width="2" rx="5" opacity="0.9"/>
+                        <text x="1310" y="235" font-size="24" font-weight="bold" fill="white" text-anchor="middle">E</text>
+                        <text x="1310" y="265" font-size="11" fill="white" text-anchor="middle" font-weight="600">95%</text>
+                        <text x="1310" y="280" font-size="10" fill="#e2e8f0" text-anchor="middle">49K kg/h</text>
+                        <text x="1310" y="295" font-size="9" fill="#a0aec0" text-anchor="middle">790 RPM</text>
+                    </g>
+                    <!-- Connection E to Furnace -->
+                    <line x1="1270" y1="250" x2="900" y2="250" stroke="#10b981" stroke-width="3" stroke-dasharray="5,5"/>
+
+                    <!-- FLAME DETECTORS (Furnace monitoring) -->
+                    <circle cx="550" cy="180" r="8" fill="#10b981" opacity="0.8"/>
+                    <text x="550" y="205" font-size="11" fill="var(--success)" text-anchor="middle" font-weight="600">🔴 Flame OK</text>
+
+                    <circle cx="850" cy="180" r="8" fill="#10b981" opacity="0.8"/>
+                    <text x="850" y="205" font-size="11" fill="var(--success)" text-anchor="middle" font-weight="600">🔴 Flame OK</text>
+
+                    <circle cx="700" cy="420" r="8" fill="#10b981" opacity="0.8"/>
+                    <text x="700" y="445" font-size="11" fill="var(--success)" text-anchor="middle" font-weight="600">🔴 Status: ACTIVE</text>
+
+                    <!-- TOTAL COAL FLOW DISPLAY -->
+                    <rect x="450" y="440" width="500" height="80" fill="rgba(14, 165, 233, 0.1)" stroke="#0ea5e9" stroke-width="2" rx="8"/>
+                    <text x="700" y="465" font-size="16" font-weight="700" fill="var(--accent)" text-anchor="middle">TOTAL COAL FLOW: 240.0 T/H</text>
+                    <text x="700" y="490" font-size="12" fill="#a0aec0" text-anchor="middle">Feeder Distribution: A(19%) | B(40%) | C(20%) | D(40%) | E(20%)</text>
+                    <text x="700" y="510" font-size="11" fill="#a0aec0" text-anchor="middle">Avg Silo Level: 85% | Avg Motor Load: 93.2%</text>
+                </svg>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">📊 Feeder Individual Metrics</h3>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Feeder</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Silo Level</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Temp (°C)</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Coal Flow (kg/h)</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Motor RPM</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Amperage (A)</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; font-weight: 600;">Feeder A</td>
+                            <td style="padding: 10px; text-align: center; color: var(--accent);">75%</td>
+                            <td style="padding: 10px; text-align: center;">51.91°C</td>
+                            <td style="padding: 10px; text-align: center;">46,112 kg/h</td>
+                            <td style="padding: 10px; text-align: center;">853.8 RPM</td>
+                            <td style="padding: 10px; text-align: center;">98.25 A</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Running</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; font-weight: 600;">Feeder B</td>
+                            <td style="padding: 10px; text-align: center; color: var(--accent);">79%</td>
+                            <td style="padding: 10px; text-align: center;">51.72°C</td>
+                            <td style="padding: 10px; text-align: center;">97,114 kg/h</td>
+                            <td style="padding: 10px; text-align: center;">827.5 RPM</td>
+                            <td style="padding: 10px; text-align: center;">81.52 A</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Running</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; font-weight: 600;">Feeder C</td>
+                            <td style="padding: 10px; text-align: center; color: var(--accent);">85%</td>
+                            <td style="padding: 10px; text-align: center;">52.59°C</td>
+                            <td style="padding: 10px; text-align: center;">47,140 kg/h</td>
+                            <td style="padding: 10px; text-align: center;">737.9 RPM</td>
+                            <td style="padding: 10px; text-align: center;">86.81 A</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Running</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; font-weight: 600;">Feeder D</td>
+                            <td style="padding: 10px; text-align: center; color: var(--accent);">91%</td>
+                            <td style="padding: 10px; text-align: center;">52.40°C</td>
+                            <td style="padding: 10px; text-align: center;">95,084 kg/h</td>
+                            <td style="padding: 10px; text-align: center;">835.4 RPM</td>
+                            <td style="padding: 10px; text-align: center;">101.2 A</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Running</span></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; font-weight: 600;">Feeder E</td>
+                            <td style="padding: 10px; text-align: center; color: var(--accent);">95%</td>
+                            <td style="padding: 10px; text-align: center;">52.10°C</td>
+                            <td style="padding: 10px; text-align: center;">48,953 kg/h</td>
+                            <td style="padding: 10px; text-align: center;">789.6 RPM</td>
+                            <td style="padding: 10px; text-align: center;">98.55 A</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Running</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: ML MODELS ANALYSIS -->
+        <div id="mlmodels" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">🧠 ML Models Analysis - Individual Performance</h2>
+            
+            <div class="info-box">
+                🤖 Real-time monitoring dari 3 Machine Learning models: RSM (Response Surface Methodology), ANN (Artificial Neural Network), dan LightGBM
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">📊 Model Status Overview</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px;">
+                <!-- RSM MODEL -->
+                <div class="integration-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text); margin: 0; font-size: 15px;">📈 RSM Model</h4>
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 20px;">
+                            <span style="color: var(--success); font-size: 11px; font-weight: 600;">🟢 Running</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; line-height: 2; color: var(--text-secondary);">
+                        <div><strong>Model Type:</strong> Response Surface Methodology</div>
+                        <div><strong>Status:</strong> <span style="color: var(--accent);">Active</span></div>
+                        <div><strong>Last Training:</strong> <span style="color: var(--accent);">Today 06:00</span></div>
+                        <div><strong>Training Data Points:</strong> <span style="color: var(--accent);">8,450</span></div>
+                        <div><strong>Polynomial Order:</strong> <span style="color: var(--accent);">2nd Order</span></div>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;"><strong>Performance Metrics:</strong></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="background: rgba(14, 165, 233, 0.05); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">R² Score</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--accent);">0.87</div>
+                            </div>
+                            <div style="background: rgba(14, 165, 233, 0.05); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">MAE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--accent);">0.42%</div>
+                            </div>
+                            <div style="background: rgba(14, 165, 233, 0.05); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">RMSE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--accent);">0.58%</div>
+                            </div>
+                            <div style="background: rgba(14, 165, 233, 0.05); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">Processing</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--accent);">1.2s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANN MODEL -->
+                <div class="integration-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text); margin: 0; font-size: 15px;">🧠 ANN Model</h4>
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 20px;">
+                            <span style="color: var(--success); font-size: 11px; font-weight: 600;">🟢 Running</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; line-height: 2; color: var(--text-secondary);">
+                        <div><strong>Model Type:</strong> Artificial Neural Network</div>
+                        <div><strong>Status:</strong> <span style="color: var(--accent);">Active</span></div>
+                        <div><strong>Last Training:</strong> <span style="color: var(--accent);">Today 06:00</span></div>
+                        <div><strong>Training Epochs:</strong> <span style="color: var(--accent);">5,000</span></div>
+                        <div><strong>Network Layers:</strong> <span style="color: var(--accent);">4 Hidden (128-64-32-16)</span></div>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;"><strong>Performance Metrics:</strong></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">R² Score</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">0.91</div>
+                            </div>
+                            <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">MAE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">0.28%</div>
+                            </div>
+                            <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">RMSE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">0.36%</div>
+                            </div>
+                            <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">Processing</div>
+                                <div style="font-size: 16px; font-weight: 700; color: #3b82f6;">2.1s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIGHTGBM MODEL -->
+                <div class="integration-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="color: var(--text); margin: 0; font-size: 15px;">🌳 LightGBM Model</h4>
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 20px;">
+                            <span style="color: var(--success); font-size: 11px; font-weight: 600;">🟢 Running</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 12px; line-height: 2; color: var(--text-secondary);">
+                        <div><strong>Model Type:</strong> Light Gradient Boosting Machine</div>
+                        <div><strong>Status:</strong> <span style="color: var(--accent);">Active</span></div>
+                        <div><strong>Last Training:</strong> <span style="color: var(--accent);">Today 06:00</span></div>
+                        <div><strong>Number of Trees:</strong> <span style="color: var(--accent);">250</span></div>
+                        <div><strong>Max Depth:</strong> <span style="color: var(--accent);">8 levels</span></div>
+                    </div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px;"><strong>Performance Metrics:</strong></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">R² Score</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--warning);">0.89</div>
+                            </div>
+                            <div style="background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">MAE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--warning);">0.31%</div>
+                            </div>
+                            <div style="background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">RMSE</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--warning);">0.42%</div>
+                            </div>
+                            <div style="background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 4px;">
+                                <div style="font-size: 10px; color: var(--text-secondary);">Processing</div>
+                                <div style="font-size: 16px; font-weight: 700; color: var(--warning);">0.8s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">🎯 Ensemble Model Predictions (Combined)</h3>
+            <div class="integration-panel">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Efficiency Prediction (Next 1H)</div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--success);">37.2%</div>
+                        <div style="font-size: 11px; color: #a0aec0;">Confidence: 94.5% | Δ +0.8%</div>
+                    </div>
+
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Heat Rate Prediction (Next 1H)</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #3b82f6;">2310 kcal/kWh</div>
+                        <div style="font-size: 11px; color: #a0aec0;">Confidence: 92.1% | Δ -40</div>
+                    </div>
+
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">NOx Estimation (Next 1H)</div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--warning);">425 mg/Nm³</div>
+                        <div style="font-size: 11px; color: #a0aec0;">Confidence: 88.7% | Δ -25</div>
+                    </div>
+
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 8px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; font-weight: 600;">Slagging Risk (Next 1H)</div>
+                        <div style="font-size: 24px; font-weight: 700; color: var(--danger);">Low</div>
+                        <div style="font-size: 11px; color: #a0aec0;">Safety Score: 96.2% | Status OK</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; margin-top: 30px; color: var(--accent); font-size: 16px;">📝 Model Execution Log</h3>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Timestamp</th>
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Model</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Duration (ms)</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Status</th>
+                            <th style="text-align: center; padding: 10px; color: var(--text-secondary);">Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; color: var(--accent);">15:25:10</td>
+                            <td style="padding: 10px;">RSM Prediction #842</td>
+                            <td style="padding: 10px; text-align: center;">1.2</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Success</span></td>
+                            <td style="padding: 10px; text-align: center;">94.5%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; color: var(--accent);">15:25:09</td>
+                            <td style="padding: 10px;">ANN Prediction #526</td>
+                            <td style="padding: 10px; text-align: center;">2.1</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Success</span></td>
+                            <td style="padding: 10px; text-align: center;">91.8%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; color: var(--accent);">15:25:08</td>
+                            <td style="padding: 10px;">LightGBM Prediction #1203</td>
+                            <td style="padding: 10px; text-align: center;">0.8</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Success</span></td>
+                            <td style="padding: 10px; text-align: center;">89.2%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px; color: var(--accent);">15:25:00</td>
+                            <td style="padding: 10px;">Ensemble Model Training #42</td>
+                            <td style="padding: 10px; text-align: center;">3450.5</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-info">Completed</span></td>
+                            <td style="padding: 10px; text-align: center;">N/A</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; color: var(--accent);">15:20:45</td>
+                            <td style="padding: 10px;">Data Preprocessing #841</td>
+                            <td style="padding: 10px; text-align: center;">245.3</td>
+                            <td style="padding: 10px; text-align: center;"><span class="badge badge-success">Success</span></td>
+                            <td style="padding: 10px; text-align: center;">100%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: N8N WORKFLOWS -->
+        <div id="n8n" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">🔄 n8n Workflow Automation</h2>
+            
+            <div class="info-box">
+                🤖 n8n workflows mengotomatisasi pengumpulan data SCADA, eksekusi model optimasi, dan pemicu alert/ticketing berbasis kondisi real-time.
+            </div>
+
+            <div class="integration-panel">
+                <div class="panel-title">🔗 Active Workflows</div>
+                <div class="workflow-grid">
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>📊 Data Collection</h4>
+                            <p>Poll SCADA every 5s, normalize data, store to DB</p>
+                        </div>
+                        <div class="workflow-status">🟢 Running</div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>🎯 Optimization Executor</h4>
+                            <p>Run RSM-ANN-LightGBM, execute NSGA-II</p>
+                        </div>
+                        <div class="workflow-status">🟢 Active</div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>⚠️ Alert Processor</h4>
+                            <p>Detect anomalies, create tickets, notify ops</p>
+                        </div>
+                        <div class="workflow-status">🟢 Running</div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>💬 ChatBot Integration</h4>
+                            <p>Process queries, fetch data, provide recommendations</p>
+                        </div>
+                        <div class="workflow-status">🟢 Connected</div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>📧 Notification Service</h4>
+                            <p>Send alerts via email, SMS, push notifications</p>
+                        </div>
+                        <div class="workflow-status">🟢 Running</div>
+                    </div>
+
+                    <div class="workflow-card">
+                        <div class="workflow-info">
+                            <h4>📊 Report Generator</h4>
+                            <p>Daily/weekly performance reports, trend analysis</p>
+                        </div>
+                        <div class="workflow-status">🟢 Scheduled</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">📝 Workflow Execution History</h3>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Workflow Name</th>
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Last Execution</th>
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Duration</th>
+                            <th style="text-align: left; padding: 10px; color: var(--text-secondary);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px;">Data Collection #127</td>
+                            <td style="padding: 10px; color: var(--accent);">12:25:10</td>
+                            <td style="padding: 10px;">1.2s</td>
+                            <td style="padding: 10px;"><span class="badge badge-success">Success</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px;">Optimization Run #42</td>
+                            <td style="padding: 10px; color: var(--accent);">12:00:00</td>
+                            <td style="padding: 10px;">23.4s</td>
+                            <td style="padding: 10px;"><span class="badge badge-success">Success</span></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px;">Alert Processor #89</td>
+                            <td style="padding: 10px; color: var(--accent);">11:58:45</td>
+                            <td style="padding: 10px;">0.8s</td>
+                            <td style="padding: 10px;"><span class="badge badge-info">Alert Created</span></td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px;">Report Generator Daily #12</td>
+                            <td style="padding: 10px; color: var(--accent);">06:00:00</td>
+                            <td style="padding: 10px;">15.3s</td>
+                            <td style="padding: 10px;"><span class="badge badge-success">Success</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 5: OPTIMIZATION -->
+        <div id="optimization" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">🎯 Optimization Recommendations</h2>
+            
+            <div class="info-box">
+                💡 Rekomendasi dari Ensemble ML Model (RSM + ANN + LightGBM) + NSGA-II Multi-Objective Optimization
+            </div>
+
+            <div class="integration-panel">
+                <div class="panel-title">🚀 Current Pareto Optimal Solutions</div>
+                
+                <h3 style="color: var(--text); margin: 15px 0 12px 0; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Solution 1: Maximum Efficiency</h3>
+                <div class="workflow-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Sawdust Share</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent);">12% <span style="font-size: 11px; color: var(--success);">↑ +2%</span></div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Coal Flow</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent);">97 tph <span style="font-size: 11px; color: var(--danger);">↓ -3%</span></div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">O₂ Trim</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent);">3.0% <span style="font-size: 11px; color: var(--danger);">↓</span></div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Expected Efficiency</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--accent);">37.1% <span style="font-size: 11px; color: var(--success);">+0.9%</span></div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--text); margin: 20px 0 12px 0; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">Solution 2: Balanced Multi-Objective</h3>
+                <div class="workflow-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Sawdust Share</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;">11% <span style="font-size: 11px; color: var(--success);">+1%</span></div>
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">NOx Reduction</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;">-12% <span style="font-size: 11px; color: var(--success);">✓</span></div>
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Slagging Risk</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;">Very Low <span style="font-size: 11px; color: var(--success);">✓</span></div>
+                    </div>
+                    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; padding: 12px;">
+                        <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 6px;">Cost Impact</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;">Neutral <span style="font-size: 11px; color: var(--success);">✓</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: TICKETING SYSTEM -->
+        <div id="tickets" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">🎫 Ticketing System</h2>
+            
+            <div class="ticket-container">
+                <div class="ticket-header">
+                    <h3>📋 Open Tickets (3)</h3>
+                    <button class="create-ticket-btn" onclick="openCreateTicketModal()">+ Create New Ticket</button>
+                </div>
+
+                <div class="ticket-list">
+                    <div class="ticket-item">
+                        <div class="ticket-id">TKT-2025-001245</div>
+                        <div class="ticket-content">
+                            <div class="ticket-title">⚠️ Heat Rate Above Normal</div>
+                            <div class="ticket-time">Created: 11:58:45 | Priority: Medium | Assigned to: Operator-A</div>
+                        </div>
+                        <div class="ticket-priority priority-medium">Medium</div>
+                    </div>
+
+                    <div class="ticket-item">
+                        <div class="ticket-id">TKT-2025-001244</div>
+                        <div class="ticket-content">
+                            <div class="ticket-title">💡 Optimization Recommendation - Apply Solution 2</div>
+                            <div class="ticket-time">Created: 12:00:00 | Priority: Low | Status: Pending Review</div>
+                        </div>
+                        <div class="ticket-priority priority-low">Low</div>
+                    </div>
+
+                    <div class="ticket-item">
+                        <div class="ticket-id">TKT-2025-001243</div>
+                        <div class="ticket-content">
+                            <div class="ticket-title">🔧 Preventive Maintenance - Check Boiler Tubes</div>
+                            <div class="ticket-time">Created: 10:15:00 | Priority: High | Assigned to: Maintenance-Team</div>
+                        </div>
+                        <div class="ticket-priority priority-high">High</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: var(--accent); font-size: 16px;">📊 Ticket Statistics</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div class="integration-panel" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--accent);">3</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Open Tickets</div>
+                </div>
+                <div class="integration-panel" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--success);">47</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Resolved This Month</div>
+                </div>
+                <div class="integration-panel" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--warning);">2.3 hrs</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Avg Response Time</div>
+                </div>
+                <div class="integration-panel" style="padding: 15px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--accent);">94%</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Resolution Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 7: ANALYTICS -->
+        <div id="analytics" class="section">
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: var(--accent);">📈 Analytics & Performance</h2>
+            
+            <h3 style="margin-bottom: 15px; color: var(--text); font-size: 16px;">Monthly Performance Metrics</h3>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-title">Average Efficiency Trend</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">CO₂ Reduction (vs Coal-only)</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">System Uptime</div>
+                    <div class="sparkline"></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Optimization Accuracy</div>
+                    <div class="sparkline"></div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; margin-top: 30px; color: var(--text); font-size: 16px;">Key Metrics Summary</h3>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+                <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="text-align: left; padding: 12px; color: var(--text-secondary);">Metric</th>
+                            <th style="text-align: center; padding: 12px; color: var(--text-secondary);">This Month</th>
+                            <th style="text-align: center; padding: 12px; color: var(--text-secondary);">Last Month</th>
+                            <th style="text-align: center; padding: 12px; color: var(--text-secondary);">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 12px;">Average Efficiency (%)</td>
+                            <td style="padding: 12px; text-align: center; color: var(--accent); font-weight: 600;">36.4%</td>
+                            <td style="padding: 12px; text-align: center;">36.1%</td>
+                            <td style="padding: 12px; text-align: center; color: var(--success);">↑ +0.3%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 12px;">Total Biomassa Used (tons)</td>
+                            <td style="padding: 12px; text-align: center; color: var(--accent); font-weight: 600;">8,450</td>
+                            <td style="padding: 12px; text-align: center;">7,800</td>
+                            <td style="padding: 12px; text-align: center; color: var(--success);">↑ +8.3%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 12px;">CO₂ Reduction (tons)</td>
+                            <td style="padding: 12px; text-align: center; color: var(--accent); font-weight: 600;">9,870</td>
+                            <td style="padding: 12px; text-align: center;">9,120</td>
+                            <td style="padding: 12px; text-align: center; color: var(--success);">↑ +8.2%</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 12px;">System Uptime (%)</td>
+                            <td style="padding: 12px; text-align: center; color: var(--accent); font-weight: 600;">99.8%</td>
+                            <td style="padding: 12px; text-align: center;">99.7%</td>
+                            <td style="padding: 12px; text-align: center; color: var(--success);">↑ +0.1%</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px;">Fuel Cost Savings (IDR)</td>
+                            <td style="padding: 12px; text-align: center; color: var(--accent); font-weight: 600;">847M</td>
+                            <td style="padding: 12px; text-align: center;">756M</td>
+                            <td style="padding: 12px; text-align: center; color: var(--success);">↑ +12%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHATBOT CONTAINER -->
+    <div class="chatbot-container" id="chatbot-container">
+        <div class="chatbot-header">
+            <h3>💬 AI Assistant Bot</h3>
+            <button class="chatbot-close" onclick="toggleChatbot()">×</button>
+        </div>
+        <div class="chatbot-messages" id="chatbot-messages">
+            <div class="message bot">
+                <div class="message-bubble">
+                    Halo! 👋 Saya adalah AI Assistant untuk PLTU Paiton 400 MW. 
+                    Tanyakan saya tentang operasi, optimasi, atau sistem yang sedang berjalan.
+                </div>
+            </div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbot-input" placeholder="Tanya sesuatu..." onkeypress="handleChatInput(event)">
+            <button onclick="sendChatMessage()">Send</button>
+        </div>
+    </div>
+
+    <!-- MINIMIZE BUTTON -->
+    <button onclick="toggleChatbot()" style="position: fixed; bottom: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; background: var(--accent); border: none; color: white; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 999; display: flex; align-items: center; justify-content: center;" id="chatbot-toggle">
+        💬
+    </button>
+
+    <!-- CREATE TICKET MODAL -->
+    <div class="modal" id="ticket-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Create New Ticket</span>
+                <button class="modal-close" onclick="closeCreateTicketModal()">×</button>
+            </div>
+            <div class="form-group">
+                <label>Issue Title</label>
+                <input type="text" placeholder="Brief description of the issue...">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea placeholder="Detailed description..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select>
+                    <option>Low</option>
+                    <option selected>Medium</option>
+                    <option>High</option>
+                    <option>Critical</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select>
+                    <option>Operational Issue</option>
+                    <option>Maintenance</option>
+                    <option>Optimization Suggestion</option>
+                    <option>System Alert</option>
+                </select>
+            </div>
+            <div class="form-buttons">
+                <button class="btn btn-primary" onclick="submitTicket()">Create Ticket</button>
+                <button class="btn btn-secondary" onclick="closeCreateTicketModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <p>
+            <strong>PLTU Paiton 400 MW - Advanced Optimization Control Center</strong> | 
+            Developed by: Arva Taqiy Raditya (NRP: 2039221090) | 
+            ITS Sarjana Terapan Teknik Mesin | 
+            Integrated with: n8n Automation + RSM-ANN-LightGBM Ensemble + NSGA-II Optimization | 
+            Last Update: <span id="last-update">--:--:--</span>
+        </p>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            const sections = document.querySelectorAll('.section');
+            const tabs = document.querySelectorAll('.nav-tab');
+            
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Unit switching
+        function switchUnit(unitName) {
+            const units = document.querySelectorAll('.unit-btn');
+            units.forEach(unit => {
+                unit.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID');
+            document.getElementById('current-time').textContent = timeString;
+            document.getElementById('last-update').textContent = timeString;
+        }
+
+        // Chatbot functions
+        function toggleChatbot() {
+            const container = document.getElementById('chatbot-container');
+            const toggle = document.getElementById('chatbot-toggle');
+            container.style.display = container.style.display === 'none' ? 'flex' : 'none';
+            toggle.style.display = toggle.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatbot-input');
+            const messages = document.getElementById('chatbot-messages');
+            const userMessage = input.value.trim();
+            
+            if (!userMessage) return;
+            
+            // Add user message
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user';
+            userDiv.innerHTML = `<div class="message-bubble">${userMessage}</div>`;
+            messages.appendChild(userDiv);
+            
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+            
+            // Simulate bot response
+            setTimeout(() => {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message bot';
+                const responses = [
+                    'Saat ini efficiency kami 36.4% dengan co-firing 10%. Mau saya optimalkan?',
+                    'Rekomendasi: Naikkan sawdust share ke 11-12% untuk hasil optimal.',
+                    'Heat rate saat ini 2350 kcal/kWh - dalam range normal.',
+                    'Semua sistem berjalan baik. Tidak ada alert kritis saat ini.',
+                    'CO₂ reduction mencapai 9,870 ton bulan ini - target terlampaui!',
+                ];
+                botDiv.innerHTML = `<div class="message-bubble">${responses[Math.floor(Math.random() * responses.length)]}</div>`;
+                messages.appendChild(botDiv);
+                messages.scrollTop = messages.scrollHeight;
+            }, 500);
+        }
+
+        function handleChatInput(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        // Ticketing functions
+        function openCreateTicketModal() {
+            document.getElementById('ticket-modal').classList.add('active');
+        }
+
+        function closeCreateTicketModal() {
+            document.getElementById('ticket-modal').classList.remove('active');
+        }
+
+        function submitTicket() {
+            alert('Ticket created successfully!');
+            closeCreateTicketModal();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('ticket-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCreateTicketModal();
+            }
+        });
+    </script>
+</body>
+</html>
